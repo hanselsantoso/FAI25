@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Admin Dashboard')</title>
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
 
     <!-- Bootstrap 4 CDN -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-Ml6g6fQYQf7W5e7/jH8Yk6QXx7W3nYVd8x5jv4D5Zz6k2G5l6K8j3M9e1a0b2c3d" crossorigin="anonymous">
@@ -45,12 +46,6 @@
 
         <!-- Sidebar -->
         <div class="sidebar">
-            <!-- Sidebar user panel (optional) -->
-            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                <div class="info">
-                    <a href="#" class="d-block">Admin User</a>
-                </div>
-            </div>
 
             <!-- Sidebar Menu -->
             <nav class="mt-2">
@@ -111,14 +106,23 @@
 
     <footer class="main-footer">
         <div class="float-right d-none d-sm-inline">
-            Anything you want
+
         </div>
-        <strong>Copyright &copy; {{ date('Y') }} <a href="#">My Company</a>.</strong> All rights reserved.
+        <strong>Copyright &copy; {{ date('Y') }} <a href="#">SIB ISTTS</a>.</strong> All rights reserved.
     </footer>
 </div>
 
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+    // Ensure jQuery sends the Laravel CSRF token on AJAX requests
+    (function(){
+        var token = document.querySelector('meta[name="csrf-token"]') && document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        if(window.jQuery && token){
+            $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': token } });
+        }
+    })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>

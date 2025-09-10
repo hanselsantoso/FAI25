@@ -10,17 +10,29 @@
     </div>
 
     <div class="card-body">
-        <form class="form-inline mb-3">
+        @if(session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
+        @endif
+
+        @php $editing = isset($edit) ? $edit : null; @endphp
+        <form method="POST" action="{{ $editing ? route('admin.products.update', $editing['id']) : route('admin.products.store') }}" class="form-inline mb-3">
+            @csrf
+            @if($editing)
+                @method('PUT')
+            @endif
             <div class="form-group mr-2">
-                <input type="text" name="name" class="form-control" placeholder="Product name">
+                <input type="text" name="name" class="form-control" placeholder="Product name" value="{{ $editing['name'] ?? '' }}">
             </div>
             <div class="form-group mr-2">
-                <input type="number" step="0.01" name="price" class="form-control" placeholder="Price">
+                <input type="number" step="0.01" name="price" class="form-control" placeholder="Price" value="{{ $editing['price'] ?? '' }}">
             </div>
             <div class="form-group mr-2">
-                <input type="number" name="stock" class="form-control" placeholder="Stock">
+                <input type="number" name="stock" class="form-control" placeholder="Stock" value="{{ $editing['stock'] ?? '' }}">
             </div>
-            <button type="button" class="btn btn-primary">Add Product</button>
+            <button type="submit" class="btn btn-primary">{{ $editing ? 'Update' : 'Add' }}</button>
+            @if($editing)
+                <a href="{{ route('admin.products.index') }}" class="btn btn-secondary ml-2">Cancel</a>
+            @endif
         </form>
     </div>
 
@@ -43,8 +55,12 @@
                     <td>Rp {{ number_format($p['price'], 0, ',', '.') }}</td>
                     <td>{{ $p['stock'] }}</td>
                     <td>
-                        <a href="#" class="btn btn-sm btn-info">Edit</a>
-                        <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                        <a href="{{ route('admin.products.edit', $p['id']) }}" class="btn btn-sm btn-info">Edit</a>
+                        <form method="POST" action="{{ route('admin.products.destroy', $p['id']) }}" style="display:inline-block">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-danger" onclick="return confirm('Delete this product?')">Delete</button>
+                        </form>
                     </td>
                 </tr>
                 @endforeach
