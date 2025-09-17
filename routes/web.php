@@ -61,4 +61,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::match(['put', 'patch'], '/{id}', [SupplierController::class, 'update'])->name('update');
         Route::delete('/{id}', [SupplierController::class, 'destroy'])->name('destroy');
     });
+
+    Route::prefix('validation')->name('validation.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ValidationDemoController::class, 'show'])->name('show');
+        Route::post('/inline', [\App\Http\Controllers\ValidationDemoController::class, 'handleInline'])->name('inline');
+        Route::post('/request', [\App\Http\Controllers\ValidationDemoController::class, 'handleFormRequest'])->name('request');
+    });
 });
