@@ -51,6 +51,7 @@ class ValidationExampleRequest extends FormRequest
     {
         return [
             'full_name.required' => 'Full name is required.',
+            'full_name.s' => 'Full name is required.',
             'username.required' => 'Choose a username (letters and numbers only).',
             'username.alpha_num' => 'Username may only contain letters and numbers.',
             'password.confirmed' => 'Password confirmation does not match.',

@@ -3,76 +3,84 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\Category;
 
 class CategoryController extends Controller
 {
-    protected $sessionKey = 'categories';
+    // protected $sessionKey = 'categories'; // OLD session key (deprecated)
 
-    protected function nextId($items)
-    {
-        if (empty($items)) return 1;
-        return max(array_column($items, 'id')) + 1;
-    }
-
+    /**
+     * Display a listing of the resource.
+     */
     public function index(Request $request)
     {
-    $categories = session($this->sessionKey, []);
-    return view('admin.categories.index', ['categories' => $categories]);
+        // ACTIVE: Eloquent (recommended) with eager loading products for grouping
+        $categories = Category::with('products')->orderByDesc('id')->get();
+
+        /* Query Builder alternative
+        $categories = DB::table('categories')->orderByDesc('id')->get();
+        */
+
+        /* Raw SQL alternative
+        $categories = DB::select('SELECT * FROM categories ORDER BY id DESC');
+        */
+
+        return view('admin.categories.index', compact('categories'));
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
-        $items = session($this->sessionKey, []);
-        $item = [
-            'id' => $this->nextId($items),
-            'name' => $request->input('name', 'Unnamed'),
-        ];
-        $items[] = $item;
-        session([$this->sessionKey => $items]);
+        $data = $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+
+        Category::create($data);
         return redirect()->route('admin.categories.index')->with('success', 'Category created.');
     }
 
+    /**
+     * Show the specified resource.
+     */
     public function show($id)
     {
-        $items = session($this->sessionKey, []);
-        foreach ($items as $it) {
-            if ($it['id'] == $id) return view('admin.categories.show', ['category' => $it]);
-        }
-        abort(404);
+        $category = Category::with('products')->findOrFail($id);
+        return view('admin.categories.show', compact('category'));
     }
 
+    /**
+     * Show the form for editing the specified resource.
+     */
     public function edit($id)
     {
-        $items = session($this->sessionKey, []);
-        foreach ($items as $it) {
-            if ($it['id'] == $id) return view('admin.categories.index', ['categories' => $items, 'edit' => $it]);
-        }
-        abort(404);
+        $categories = Category::with('products')->orderByDesc('id')->get();
+        $edit = Category::findOrFail($id);
+        return view('admin.categories.index', compact('categories', 'edit'));
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, $id)
     {
-        $items = session($this->sessionKey, []);
-        foreach ($items as $idx => $it) {
-            if ($it['id'] == $id) {
-                $items[$idx]['name'] = $request->input('name', $it['name']);
-                session([$this->sessionKey => $items]);
-                return redirect()->route('admin.categories.index')->with('success', 'Category updated.');
-            }
-        }
-        abort(404);
+        $data = $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+
+        $category = Category::findOrFail($id);
+        $category->update($data);
+        return redirect()->route('admin.categories.index')->with('success', 'Category updated.');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy($id)
     {
-        $items = session($this->sessionKey, []);
-        foreach ($items as $idx => $it) {
-            if ($it['id'] == $id) {
-                array_splice($items, $idx, 1);
-                session([$this->sessionKey => $items]);
-                return redirect()->route('admin.categories.index')->with('success', 'Category deleted.');
-            }
-        }
-        abort(404);
+        Category::findOrFail($id)->delete();
+        return redirect()->route('admin.categories.index')->with('success', 'Category deleted.');
     }
 }

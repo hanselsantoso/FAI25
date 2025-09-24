@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\ValidationExampleRequest;
+use Illuminate\Contracts\Validation\Validator;
 
 class ValidationDemoController extends Controller
 {
@@ -21,7 +22,7 @@ class ValidationDemoController extends Controller
             'phone' => ['required', 'regex:/^[0-9\-\+\s\(\)]+$/'],
             'username' => ['required', 'alpha_num', 'min:3', 'max:20'],
         ],[
-            'name.required' => 'Please tell us your name.',
+            'name.required' => 'Nama tidak boleh kosong',
             'phone.regex' => 'Phone must contain only numbers and common symbols (+ - ( ) space).',
         ]);
 

@@ -3,77 +3,91 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\Supplier;
 
 class SupplierController extends Controller
 {
-    protected $sessionKey = 'suppliers';
+    // protected $sessionKey = 'suppliers'; // OLD session storage (deprecated)
 
-    protected function nextId($items)
-    {
-        if (empty($items)) return 1;
-        return max(array_column($items, 'id')) + 1;
-    }
-
+    /**
+     * Display a listing of suppliers.
+     */
     public function index(Request $request)
     {
-    $suppliers = session($this->sessionKey, []);
-    return view('admin.suppliers.index', ['suppliers' => $suppliers]);
+        // OLD session
+        // $suppliers = session($this->sessionKey, []);
+
+        // ACTIVE Eloquent (with products eager loaded for grouping table)
+        $suppliers = Supplier::with('products')->orderByDesc('id')->get();
+
+        /* Query Builder
+        // $suppliers = DB::table('suppliers')->orderByDesc('id')->get();
+        */
+
+        /* Raw SQL
+        // $suppliers = DB::select('SELECT * FROM suppliers ORDER BY id DESC');
+        */
+
+        return view('admin.suppliers.index', compact('suppliers'));
     }
 
+    /**
+     * Store a newly created supplier.
+     */
     public function store(Request $request)
     {
-        $items = session($this->sessionKey, []);
-        $item = [
-            'id' => $this->nextId($items),
-            'name' => $request->input('name', 'Unnamed'),
-            'contact' => $request->input('contact', ''),
-        ];
-        $items[] = $item;
-        session([$this->sessionKey => $items]);
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'contact' => 'nullable|string|max:255',
+        ]);
+
+        Supplier::create($data);
+
         return redirect()->route('admin.suppliers.index')->with('success', 'Supplier created.');
     }
 
+    /**
+     * Display the specified supplier.
+     */
     public function show($id)
     {
-        $items = session($this->sessionKey, []);
-        foreach ($items as $it) {
-            if ($it['id'] == $id) return view('admin.suppliers.show', ['supplier' => $it]);
-        }
-        abort(404);
+        $supplier = Supplier::with('products')->findOrFail($id);
+        return view('admin.suppliers.show', compact('supplier'));
     }
 
+    /**
+     * Show the form for editing the supplier.
+     */
     public function edit($id)
     {
-        $items = session($this->sessionKey, []);
-        foreach ($items as $it) {
-            if ($it['id'] == $id) return view('admin.suppliers.index', ['suppliers' => $items, 'edit' => $it]);
-        }
-        abort(404);
+        $suppliers = Supplier::with('products')->orderByDesc('id')->get();
+        $edit = Supplier::findOrFail($id);
+        return view('admin.suppliers.index', compact('suppliers', 'edit'));
     }
 
+    /**
+     * Update the specified supplier.
+     */
     public function update(Request $request, $id)
     {
-        $items = session($this->sessionKey, []);
-        foreach ($items as $idx => $it) {
-            if ($it['id'] == $id) {
-                $items[$idx] = array_merge($it, $request->only(['name', 'contact']));
-                session([$this->sessionKey => $items]);
-                return redirect()->route('admin.suppliers.index')->with('success', 'Supplier updated.');
-            }
-        }
-        abort(404);
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'contact' => 'nullable|string|max:255',
+        ]);
+
+        $supplier = Supplier::findOrFail($id);
+        $supplier->update($data);
+
+        return redirect()->route('admin.suppliers.index')->with('success', 'Supplier updated.');
     }
 
+    /**
+     * Remove the specified supplier.
+     */
     public function destroy($id)
     {
-        $items = session($this->sessionKey, []);
-        foreach ($items as $idx => $it) {
-            if ($it['id'] == $id) {
-                array_splice($items, $idx, 1);
-                session([$this->sessionKey => $items]);
-                return redirect()->route('admin.suppliers.index')->with('success', 'Supplier deleted.');
-            }
-        }
-        abort(404);
+        Supplier::findOrFail($id)->delete();
+        return redirect()->route('admin.suppliers.index')->with('success', 'Supplier deleted.');
     }
 }
