@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\EloquentDemoController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -60,6 +61,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/{id}/edit', [SupplierController::class, 'edit'])->name('edit');
         Route::match(['put', 'patch'], '/{id}', [SupplierController::class, 'update'])->name('update');
         Route::delete('/{id}', [SupplierController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('eloquent')->name('eloquent.')->group(function () {
+        Route::get('/', [EloquentDemoController::class, 'index'])->name('index');
+        Route::post('/create-demo', [EloquentDemoController::class, 'createDemo'])->name('create');
+        Route::post('/update-demo', [EloquentDemoController::class, 'updateDemo'])->name('update');
+        Route::post('/delete-demo', [EloquentDemoController::class, 'deleteDemo'])->name('delete');
+        Route::post('/restore-demo', [EloquentDemoController::class, 'restoreDemo'])->name('restore');
+        Route::post('/force-delete-demo', [EloquentDemoController::class, 'forceDeleteDemo'])->name('forceDelete');
+        Route::post('/reset-demo', [EloquentDemoController::class, 'resetDemo'])->name('reset');
     });
 
     Route::prefix('validation')->name('validation.')->group(function () {

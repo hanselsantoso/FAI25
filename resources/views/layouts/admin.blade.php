@@ -75,6 +75,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="/admin/eloquent" class="nav-link {{ request()->is('admin/eloquent*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-database"></i>
+                            <p>Eloquent Demo</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="/admin/validation" class="nav-link {{ request()->is('admin/validation*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-check-circle"></i>
                             <p>Validation</p>
