@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -15,7 +16,8 @@ class Product extends Model
         'price',
         'stock',
         'category_id',
-        'supplier_id'
+        'supplier_id',
+        'image_path',
     ];
 
     /**
@@ -32,5 +34,18 @@ class Product extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (! $this->image_path) {
+            return null;
+        }
+
+        if (Storage::disk('public')->exists($this->image_path)) {
+            return Storage::url($this->image_path);
+        }
+
+        return null;
     }
 }

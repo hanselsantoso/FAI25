@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Models\{Product, Category, Supplier};
 
 class ProductController extends Controller
@@ -55,14 +56,16 @@ class ProductController extends Controller
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
             'supplier_id' => 'required|exists:suppliers,id',
+            'image' => 'nullable|image|max:2048',
         ]);
 
-        // OLD session logic
-        // $items = session($this->sessionKey, []);
-        // $items[] = ['id' => $this->nextId($items), ...];
-        // session([$this->sessionKey => $items]);
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('uploads/products', 'public');
+        }
 
-        // ACTIVE Eloquent
+        $data['image_path'] = $imagePath;
+
         Product::create($data);
 
         /* Query Builder
@@ -111,9 +114,23 @@ class ProductController extends Controller
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
             'supplier_id' => 'required|exists:suppliers,id',
+            'image' => 'nullable|image|max:2048',
         ]);
 
         $product = Product::findOrFail($id);
+
+        $imagePath = $product->image_path;
+
+        if ($request->hasFile('image')) {
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
+
+            $imagePath = $request->file('image')->store('uploads/products', 'public');
+        }
+
+        $data['image_path'] = $imagePath;
+
         $product->update($data);
 
         /* Query Builder
@@ -134,7 +151,13 @@ class ProductController extends Controller
      */
     public function destroy($id)
     {
-        Product::findOrFail($id)->delete();
+        $product = Product::findOrFail($id);
+
+        if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
+            Storage::disk('public')->delete($product->image_path);
+        }
+
+        $product->delete();
 
         /* Query Builder
         DB::table('products')->where('id', $id)->delete();

@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\EloquentDemoController;
+use App\Http\Controllers\FileUploadController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -77,5 +78,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [\App\Http\Controllers\ValidationDemoController::class, 'show'])->name('show');
         Route::post('/inline', [\App\Http\Controllers\ValidationDemoController::class, 'handleInline'])->name('inline');
         Route::post('/request', [\App\Http\Controllers\ValidationDemoController::class, 'handleFormRequest'])->name('request');
+    });
+
+    Route::prefix('uploads')->name('uploads.')->group(function () {
+        Route::get('/', [FileUploadController::class, 'index'])->name('index');
+        Route::post('/storage', [FileUploadController::class, 'storeWithStorage'])->name('storage');
+        Route::get('/storage/{filename}', [FileUploadController::class, 'showStorage'])
+            ->where('filename', '[^/]+')
+            ->name('storage.show');
+        Route::post('/public', [FileUploadController::class, 'storeWithPublic'])->name('public');
+        Route::get('/public/{filename}', [FileUploadController::class, 'showPublic'])
+            ->where('filename', '[^/]+')
+            ->name('public.show');
     });
 });

@@ -28,6 +28,7 @@ class ProductSeeder extends Seeder
                 $sample + [
                     'category_id' => $categories->random()->id,
                     'supplier_id' => $suppliers->random()->id,
+                    'image_path' => null,
                 ]
             );
         }

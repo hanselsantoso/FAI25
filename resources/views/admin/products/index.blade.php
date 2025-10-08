@@ -44,7 +44,7 @@
             </div>
         @endunless
 
-        <form method="POST" action="{{ $editing ? route('admin.products.update', $editing->id) : route('admin.products.store') }}" class="mb-3">
+        <form method="POST" action="{{ $editing ? route('admin.products.update', $editing->id) : route('admin.products.store') }}" class="mb-3" enctype="multipart/form-data">
             @csrf
             @if($editing)
                 @method('PUT')
@@ -75,11 +75,31 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-1 mb-2 d-flex">
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-md-4 mb-2">
+                    <div class="custom-file">
+                        <input type="file" name="image" class="custom-file-input" id="product-image" accept="image/*" {{ $canCreate ? '' : 'disabled' }}>
+                        <label class="custom-file-label" for="product-image">Choose product image</label>
+                    </div>
+                    <small class="form-text text-muted">Optional image (max 2MB)</small>
+                    @error('image')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+                @if($editing && $editing->image_url)
+                    <div class="col-md-3 mb-2">
+                        <div class="border rounded p-2 text-center bg-light">
+                            <img src="{{ $editing->image_url }}" alt="Current image" class="img-fluid" style="max-height:120px; object-fit:cover;">
+                            <div class="small text-muted mt-1">Current image preview</div>
+                        </div>
+                    </div>
+                @endif
+                <div class="col-md-2 mb-2 d-flex">
                     <button type="submit" class="btn btn-primary btn-block" {{ $canCreate ? '' : 'disabled' }}>{{ $editing ? 'Update' : 'Add' }}</button>
                 </div>
                 @if($editing)
-                    <div class="col-md-1 mb-2 d-flex">
+                    <div class="col-md-2 mb-2 d-flex">
                         <a href="{{ route('admin.products.index') }}" class="btn btn-secondary btn-block">Cancel</a>
                     </div>
                 @endif
@@ -92,6 +112,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Image</th>
                     <th>Name</th>
                     <th>Category</th>
                     <th>Supplier</th>
@@ -104,6 +125,15 @@
                 @foreach($products as $p)
                 <tr>
                     <td>{{ $p->id }}</td>
+                    <td>
+                        @if($p->image_url)
+                            <a href="{{ $p->image_url }}" target="_blank">
+                                <img src="{{ $p->image_url }}" alt="{{ $p->name }}" class="img-thumbnail" style="width:60px;height:60px;object-fit:cover;">
+                            </a>
+                        @else
+                            <span class="text-muted small">No image</span>
+                        @endif
+                    </td>
                     <td>{{ $p->name }}</td>
                     <td>{{ $p->category->name ?? '-' }}</td>
                     <td>{{ $p->supplier->name ?? '-' }}</td>
@@ -134,8 +164,14 @@ $(function(){
         pageLength: 10,
         order: [[0,'desc']],
         columnDefs: [
+            { targets: 1, orderable: false, searchable: false },
             { targets: -1, orderable: false, searchable: false }
         ]
+    });
+
+    $('#product-image').on('change', function(){
+        const fileName = $(this).val().split('\\').pop();
+        $(this).next('.custom-file-label').addClass('selected').text(fileName || 'Choose product image');
     });
 });
 </script>

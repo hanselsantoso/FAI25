@@ -86,6 +86,12 @@
                             <p>Validation</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="/admin/uploads" class="nav-link {{ request()->is('admin/uploads*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-upload"></i>
+                            <p>File Upload Lab</p>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->
