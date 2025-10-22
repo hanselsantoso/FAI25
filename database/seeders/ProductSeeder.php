@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\{Product, Category, Supplier};
+use App\Models\{Product, Category, Supplier, Tag};
 
 class ProductSeeder extends Seeder
 {
@@ -22,8 +22,10 @@ class ProductSeeder extends Seeder
             ['name' => 'Basketball', 'price' => 29.50, 'stock' => 40],
         ];
 
+        $tagCount = Tag::count();
+
         foreach ($samples as $sample) {
-            Product::firstOrCreate(
+            $product = Product::firstOrCreate(
                 ['name' => $sample['name']],
                 $sample + [
                     'category_id' => $categories->random()->id,
@@ -31,6 +33,16 @@ class ProductSeeder extends Seeder
                     'image_path' => null,
                 ]
             );
+
+            if ($tagCount > 0) {
+                $tagIds = Tag::inRandomOrder()
+                    ->take(random_int(1, min(3, $tagCount)))
+                    ->pluck('id');
+
+                if ($tagIds->isNotEmpty()) {
+                    $product->tags()->syncWithoutDetaching($tagIds->all());
+                }
+            }
         }
     }
 }

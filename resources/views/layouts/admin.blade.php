@@ -14,6 +14,16 @@
 
     @stack('styles')
 </head>
+@php
+    $authUser = auth()->user();
+    $role = $authUser?->role;
+    $dashboardRoute = match ($role) {
+        'admin' => route('admin.dashboard'),
+        'warehouse_manager' => route('admin.warehouse.products.index'),
+        default => '#',
+    };
+@endphp
+
 <body class="hold-transition sidebar-mini">
 <div class="wrapper">
     <!-- Navbar -->
@@ -23,16 +33,31 @@
             <li class="nav-item">
                 <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
             </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="/" class="nav-link">Home</a>
-            </li>
+            @if ($dashboardRoute !== '#')
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="{{ $dashboardRoute }}" class="nav-link">Dashboard</a>
+                </li>
+            @endif
         </ul>
 
         <!-- Right navbar links -->
         <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link" href="#" role="button">Logout</a>
-            </li>
+            @auth
+                <li class="nav-item d-flex align-items-center mr-2">
+                    <span class="nav-link mb-0">Hi, <strong>{{ auth()->user()->name }}</strong></span>
+                </li>
+                <li class="nav-item">
+                    <form action="{{ route('logout') }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-link nav-link" style="padding: 0;">Logout</button>
+                    </form>
+                </li>
+            @endauth
+            @guest
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('auth.landing') }}">Login</a>
+                </li>
+            @endguest
         </ul>
     </nav>
     <!-- /.navbar -->
@@ -40,7 +65,7 @@
     <!-- Main Sidebar Container -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <!-- Brand Logo -->
-        <a href="/admin" class="brand-link">
+        <a href="{{ $dashboardRoute !== '#' ? $dashboardRoute : '#' }}" class="brand-link">
             <span class="brand-text font-weight-light">My Admin</span>
         </a>
 
@@ -50,48 +75,69 @@
             <!-- Sidebar Menu -->
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                    <li class="nav-item">
-                        <a href="/admin" class="nav-link">
-                            <i class="nav-icon fas fa-tachometer-alt"></i>
-                            <p>Dashboard</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/admin/products" class="nav-link">
-                            <i class="nav-icon fas fa-box"></i>
-                            <p>Products</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/admin/categories" class="nav-link">
-                            <i class="nav-icon fas fa-tags"></i>
-                            <p>Categories</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/admin/suppliers" class="nav-link">
-                            <i class="nav-icon fas fa-truck"></i>
-                            <p>Suppliers</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/admin/eloquent" class="nav-link {{ request()->is('admin/eloquent*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-database"></i>
-                            <p>Eloquent Demo</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/admin/validation" class="nav-link {{ request()->is('admin/validation*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-check-circle"></i>
-                            <p>Validation</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/admin/uploads" class="nav-link {{ request()->is('admin/uploads*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-upload"></i>
-                            <p>File Upload Lab</p>
-                        </a>
-                    </li>
+                    @if ($role === 'admin')
+                        <li class="nav-item">
+                            <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Dashboard</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.products.index') }}" class="nav-link {{ request()->is('admin/products*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-box"></i>
+                                <p>Products</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.categories.index') }}" class="nav-link {{ request()->is('admin/categories*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-tags"></i>
+                                <p>Categories</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.suppliers.index') }}" class="nav-link {{ request()->is('admin/suppliers*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-truck"></i>
+                                <p>Suppliers</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->is('admin/users*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-users-cog"></i>
+                                <p>User Management</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.middleware.guide') }}" class="nav-link {{ request()->routeIs('admin.middleware.guide') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-shield-alt"></i>
+                                <p>Middleware Guide</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.eloquent.index') }}" class="nav-link {{ request()->is('admin/eloquent*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-database"></i>
+                                <p>Eloquent Demo</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.validation.show') }}" class="nav-link {{ request()->is('admin/validation*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-check-circle"></i>
+                                <p>Validation</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.uploads.index') }}" class="nav-link {{ request()->is('admin/uploads*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-upload"></i>
+                                <p>File Upload Lab</p>
+                            </a>
+                        </li>
+                    @elseif ($role === 'warehouse_manager')
+                        <li class="nav-item">
+                            <a href="{{ route('admin.warehouse.products.index') }}" class="nav-link {{ request()->routeIs('admin.warehouse.products.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Update Stok Produk</p>
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->

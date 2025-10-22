@@ -1,16 +1,53 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Auth\AuthLandingController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\MiddlewareGuideController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\EloquentDemoController;
 use App\Http\Controllers\FileUploadController;
+use App\Http\Controllers\Warehouse\ProductStockController;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::middleware('guest')->group(function () {
+    Route::get('/', [AuthLandingController::class, 'show'])->name('auth.landing');
+    Route::get('/login', [AuthLandingController::class, 'show'])->name('login');
+    Route::get('/register', function () {
+        return redirect()->to(route('auth.landing').'#register');
+    })->name('register');
+    Route::post('/login', [AuthLandingController::class, 'login'])->name('login.perform');
+    Route::post('/register', [AuthLandingController::class, 'register'])->name('register.perform');
 });
+
+Route::middleware('auth')->post('/logout', function (Request $request) {
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect()->route('auth.landing');
+})->name('logout');
+
+Route::middleware('auth')->get('/dashboard', function () {
+    $user = Auth::user();
+
+    $target = match ($user->role) {
+        'admin' => route('admin.dashboard'),
+        'warehouse_manager' => route('admin.warehouse.products.index'),
+        'customer' => route('customer.home'),
+        default => route('customer.home'),
+    };
+
+    return redirect()->to($target);
+})->name('dashboard');
+
+Route::middleware(['auth', 'role:customer'])->get('/customer/home', function () {
+    return view('customer.home');
+})->name('customer.home');
 
 // Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
 // Route::get('/admin/products', [ProductController::class, 'index'])->name('admin.products.index');
@@ -34,7 +71,7 @@ Route::get('/', function () {
 // Route::match(['put','patch'], '/admin/suppliers/{id}', [SupplierController::class, 'update'])->name('admin.suppliers.update');
 // Route::delete('/admin/suppliers/{id}', [SupplierController::class, 'destroy'])->name('admin.suppliers.destroy');
 
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');
 
     Route::prefix('products')->name('products.')->group(function () {
@@ -90,5 +127,32 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/public/{filename}', [FileUploadController::class, 'showPublic'])
             ->where('filename', '[^/]+')
             ->name('public.show');
+    });
+
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('/create', [UserManagementController::class, 'create'])->name('create');
+        Route::post('/', [UserManagementController::class, 'store'])->name('store');
+        Route::get('/{user}/edit', [UserManagementController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::get('/middleware-guide', MiddlewareGuideController::class)->name('middleware.guide');
+});
+
+Route::middleware(['auth', 'role:admin|warehouse_manager'])->prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('warehouse')->name('warehouse.')->group(function () {
+        Route::get('/products', [ProductStockController::class, 'index'])->name('products.index');
+        Route::put('/products/{product}', [ProductStockController::class, 'update'])->name('products.update');
+    });
+
+    Route::middleware('role:admin,warehouse_manager')->prefix('secure')->name('secure.')->group(function () {
+        Route::get('/demo', function (Request $request) {
+            return response()->json([
+                'message' => 'Selamat! Guard ' . ($request->attributes->get('auth_guard') ?? config('auth.defaults.guard')) . ' mengenali Anda memiliki role admin/warehouse_manager.',
+                'user' => optional($request->user())->only(['name', 'email', 'role']),
+            ]);
+        })->name('demo');
     });
 });

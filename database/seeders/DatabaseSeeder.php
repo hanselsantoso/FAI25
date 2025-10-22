@@ -15,21 +15,44 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::updateOrCreate(
-            ['email' => 'test@example.com'],
+        $users = [
             [
-                'name' => 'Test User',
-                'password' => bcrypt('password'),
-                'email_verified_at' => now(),
-            ]
-        );
+                'name' => 'Admin Demo',
+                'email' => 'admin@example.com',
+                'role' => 'admin',
+            ],
+            [
+                'name' => 'Warehouse Manager Demo',
+                'email' => 'manager@example.com',
+                'role' => 'warehouse_manager',
+            ],
+            [
+                'name' => 'Customer Demo',
+                'email' => 'customer@example.com',
+                'role' => 'customer',
+            ],
+        ];
+
+        foreach ($users as $user) {
+            User::updateOrCreate(
+                ['email' => $user['email']],
+                [
+                    'name' => $user['name'],
+                    'role' => $user['role'],
+                    'password' => bcrypt('password'),
+                    'email_verified_at' => now(),
+                ]
+            );
+        }
 
         // Custom domain data
         $this->call([
             CategorySeeder::class,
             SupplierSeeder::class,
+            TagSeeder::class,
             ProductSeeder::class,
             LegacyCategorySeeder::class,
+            ProfileSeeder::class,
         ]);
     }
 }

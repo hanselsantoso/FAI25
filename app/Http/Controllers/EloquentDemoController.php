@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\LegacyCategory;
+use App\Models\Product;
+use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +18,7 @@ class EloquentDemoController extends Controller
     public function index(): View
     {
         $examples = $this->buildMethodExamples();
+        $relationshipExamples = $this->buildRelationshipExamples();
         $legacyCategories = LegacyCategory::orderBy('code')->get();
         $demoCategories = Category::where('name', 'like', 'Demo:%')->orderByDesc('id')->take(10)->get();
         $trashedDemoCategories = Category::onlyTrashed()->where('name', 'like', 'Demo:%')->orderByDesc('deleted_at')->take(10)->get();
@@ -23,13 +27,26 @@ class EloquentDemoController extends Controller
             'trashed' => Category::onlyTrashed()->where('name', 'like', 'Demo:%')->count(),
             'withTrashed' => Category::withTrashed()->where('name', 'like', 'Demo:%')->count(),
         ];
+        $userProfiles = User::with('profile')->whereHas('profile')->orderBy('name')->get(['id', 'name', 'email', 'role']);
+        $categoryProductStats = Category::withCount('products')->orderByDesc('products_count')->take(5)->get();
+        $productShowcase = Product::with(['category', 'supplier', 'tags'])->orderBy('name')->take(5)->get();
+    $tagCloud = Tag::orderBy('name')->get();
+    $demoUsers = User::orderBy('role')->get(['name', 'email', 'role']);
+    $authGuards = config('auth.guards', []);
 
         return view('admin.eloquent.index', [
             'examples' => $examples,
+            'relationshipExamples' => $relationshipExamples,
             'legacyCategories' => $legacyCategories,
             'demoCategories' => $demoCategories,
             'trashedDemoCategories' => $trashedDemoCategories,
             'softDeleteStats' => $softDeleteStats,
+            'userProfiles' => $userProfiles,
+            'categoryProductStats' => $categoryProductStats,
+            'productShowcase' => $productShowcase,
+            'tagCloud' => $tagCloud,
+            'demoUsers' => $demoUsers,
+            'authGuards' => $authGuards,
         ]);
     }
 
@@ -227,6 +244,69 @@ class EloquentDemoController extends Controller
                     DB::table('categories')->whereNotNull('deleted_at')->take($limit)->get()
                 ),
                 'notes' => 'Eloquent menyediakan helper untuk mengikutsertakan atau hanya mengambil data terhapus. Query Builder perlu whereNotNull("deleted_at") secara manual.',
+            ],
+        ];
+    }
+
+    protected function buildRelationshipExamples(): array
+    {
+        $userWithProfile = User::with('profile')->whereHas('profile')->first();
+        $categoryWithProducts = Category::with('products')->has('products')->first();
+        $productWithTags = Product::with(['tags', 'supplier'])->has('tags')->first();
+        $normalizedUserProfile = $userWithProfile ? $this->normalize($userWithProfile) : null;
+        $normalizedCategoryProducts = $categoryWithProducts ? $this->normalize($categoryWithProducts->loadCount('products')) : null;
+        $normalizedProductTags = $productWithTags ? $this->normalize($productWithTags) : null;
+
+        return [
+            [
+                'title' => 'One-To-One: User → Profile',
+                'eloquent_code' => "User::with('profile')->first();",
+                'eloquent_result' => $normalizedUserProfile,
+                'builder_code' => "DB::table('users as u')\n    ->join('profiles as p', 'p.user_id', '=', 'u.id')\n    ->select('u.id', 'u.name', 'u.email', 'p.headline', 'p.website')\n    ->first();",
+                'builder_result' => $userWithProfile
+                    ? $this->normalize(
+                        DB::table('users as u')
+                            ->join('profiles as p', 'p.user_id', '=', 'u.id')
+                            ->select('u.id', 'u.name', 'u.email', 'p.headline', 'p.website')
+                            ->where('u.id', $userWithProfile->id)
+                            ->first()
+                    )
+                    : null,
+                'notes' => 'Eloquent relasi one-to-one mempermudah eager loading dan akses data profil via $user->profile. Query Builder mengharuskan join manual dan mapping field secara eksplisit.',
+            ],
+            [
+                'title' => 'One-To-Many: Category → Products',
+                'eloquent_code' => "Category::with('products')->withCount('products')->first();",
+                'eloquent_result' => $normalizedCategoryProducts,
+                'builder_code' => "DB::table('categories as c')\n    ->leftJoin('products as p', 'p.category_id', '=', 'c.id')\n    ->select('c.id', 'c.name', DB::raw('COUNT(p.id) as products_count'))\n    ->groupBy('c.id', 'c.name')\n    ->first();",
+                'builder_result' => $categoryWithProducts
+                    ? $this->normalize(
+                        DB::table('categories as c')
+                            ->leftJoin('products as p', 'p.category_id', '=', 'c.id')
+                            ->select('c.id', 'c.name', DB::raw('COUNT(p.id) as products_count'))
+                            ->where('c.id', $categoryWithProducts->id)
+                            ->groupBy('c.id', 'c.name')
+                            ->first()
+                    )
+                    : null,
+                'notes' => 'Relasi one-to-many memungkinkan akses $category->products sebagai koleksi model lengkap, termasuk withCount() untuk statistik. Query Builder memerlukan GROUP BY untuk menghitung jumlah produk.',
+            ],
+            [
+                'title' => 'Many-To-Many: Product ↔ Tags',
+                'eloquent_code' => "Product::with(['tags', 'supplier'])->first();",
+                'eloquent_result' => $normalizedProductTags,
+                'builder_code' => "DB::table('products as p')\n    ->join('product_tag as pt', 'pt.product_id', '=', 'p.id')\n    ->join('tags as t', 't.id', '=', 'pt.tag_id')\n    ->select('p.id', 'p.name', 't.name as tag_name')\n    ->first();",
+                'builder_result' => $productWithTags
+                    ? $this->normalize(
+                        DB::table('products as p')
+                            ->join('product_tag as pt', 'pt.product_id', '=', 'p.id')
+                            ->join('tags as t', 't.id', '=', 'pt.tag_id')
+                            ->select('p.id', 'p.name', 't.name as tag_name')
+                            ->where('p.id', $productWithTags->id)
+                            ->first()
+                    )
+                    : null,
+                'notes' => 'Relasi many-to-many memberikan akses koleksi tag lengkap dan metadata pivot ($product->tags). Query Builder harus mengelola tabel pivot product_tag secara manual.',
             ],
         ];
     }
