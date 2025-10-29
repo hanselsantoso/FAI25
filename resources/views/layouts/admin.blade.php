@@ -113,6 +113,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('admin.api.guide') }}" class="nav-link {{ request()->routeIs('admin.api.guide') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-code"></i>
+                                <p>API Guide</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('admin.eloquent.index') }}" class="nav-link {{ request()->is('admin/eloquent*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-database"></i>
                                 <p>Eloquent Demo</p>

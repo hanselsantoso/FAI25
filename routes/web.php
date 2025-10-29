@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\AuthLandingController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\MiddlewareGuideController;
+use App\Http\Controllers\Admin\ApiGuideController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
@@ -139,6 +140,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 
     Route::get('/middleware-guide', MiddlewareGuideController::class)->name('middleware.guide');
+    Route::get('/api-guide', ApiGuideController::class)->name('api.guide');
 });
 
 Route::middleware(['auth', 'role:admin|warehouse_manager'])->prefix('admin')->name('admin.')->group(function () {
